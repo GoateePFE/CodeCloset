@@ -1,4 +1,4 @@
-﻿<##############################################################################
+<##############################################################################
 Ashley McGlone
 Microsoft Premier Field Engineer
 http://aka.ms/GoateePFE
@@ -54,10 +54,19 @@ $gPLinks += Get-ADObject -Server $Server -LDAPFilter '(objectClass=site)' `
     -SearchScope OneLevel `
     -Properties gPLink | Select-Object distinguishedName, gPLink
 
+# Parse out each GPO GUID from the gPLink attribute
+# Example gPLink value:
+#   [LDAP://cn={7BE35F55-E3DF-4D1C-8C3A-38F81F451D86},cn=policies,cn=system,DC=wingtiptoys,DC=local;2][LDAP://cn={046584E4-F1CD-457E-8366-F48B7492FBA2},cn=policies,cn=system,DC=wingtiptoys,DC=local;0][LDAP://cn={12845926-AE1B-49C4-A33A-756FF72DCC6B},cn=policies,cn=system,DC=wingtiptoys,DC=local;1]
+$AllGPOLinkedGUIDs = ForEach ($gPL in ($gPLinks.gPLink | Where-Object {$_.Length -gt 1})) {
+    $gPL -split ']' | Where-Object {$_} | ForEach-Object {
+        [GUID]($_ -split '{|}')[1]
+    }
+}
 # Hash table for fast lookups on link status
 $gPLinksHash = @{}
-$gPLinks.gPLink | Select-Object -Unique |
-     ForEach-Object {$gPLinksHash.Add([GUID]($_ -split '{|}')[1],$null)}
+$AllGPOLinkedGUIDs | Select-Object -Unique | ForEach-Object {
+    $gPLinksHash.Add($_,$null)
+}
 
 Get-GPO -All | Select-Object Path, `
     @{Name='GUID';Expression={$_.ID}}, `
