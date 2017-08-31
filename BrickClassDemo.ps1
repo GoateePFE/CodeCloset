@@ -1,5 +1,5 @@
-﻿# Add a method for Show()
-# Change default constructor to randomize all properties
+# PowerShell Class Demo
+# Ashley McGlone
 
 Enum style {
     Brick
